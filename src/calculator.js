@@ -4,16 +4,23 @@
 /**
  * CLI Calculator
  * Supported operations (exported functions and CLI):
- *  - add       (aliases: add, +)
- *  - subtract  (aliases: subtract, -)
- *  - multiply  (aliases: multiply, x, *, times)
- *  - divide    (aliases: divide, /)
+ *  - addition      (aliases: add, +)
+ *  - subtraction   (aliases: subtract, -)
+ *  - multiplication(aliases: multiply, x, *, times)
+ *  - division      (aliases: divide, /)
  *
- * The module exports: add, subtract, multiply, divide
+ * The module exports: addition, subtraction, multiplication, division
  * The CLI runs only when executed directly (require.main === module)
  */
 
 const { add, subtract, multiply, divide } = require('./calculator-core');
+
+// Provide the requested function names as aliases to the core implementations
+const addition = add;
+const subtraction = subtract;
+const multiplication = multiply;
+const division = divide;
+
 
 function usage(errMsg) {
   if (errMsg) console.error(`Error: ${errMsg}`);
@@ -64,4 +71,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { add, subtract, multiply, divide };
+module.exports = { addition, subtraction, multiplication, division };
