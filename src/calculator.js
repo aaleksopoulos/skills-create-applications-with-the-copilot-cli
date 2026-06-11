@@ -3,20 +3,17 @@
 
 /**
  * CLI Calculator
- * Supported operations:
+ * Supported operations (exported functions and CLI):
  *  - add       (aliases: add, +)
  *  - subtract  (aliases: subtract, -)
  *  - multiply  (aliases: multiply, x, *, times)
  *  - divide    (aliases: divide, /)
  *
- * Usage examples:
- *   node src/calculator.js add 2 3        # -> 5
- *   node src/calculator.js subtract 5 2   # -> 3
- *   node src/calculator.js multiply 4 3   # -> 12
- *   node src/calculator.js divide 8 2     # -> 4
+ * The module exports: add, subtract, multiply, divide
+ * The CLI runs only when executed directly (require.main === module)
  */
 
-const [, , opRaw, aRaw, bRaw] = process.argv;
+const { add, subtract, multiply, divide } = require('./calculator-core');
 
 function usage(errMsg) {
   if (errMsg) console.error(`Error: ${errMsg}`);
@@ -25,56 +22,46 @@ function usage(errMsg) {
   process.exit(1);
 }
 
-if (!opRaw || !aRaw || !bRaw) usage('operation and two numeric arguments are required');
-
-const op = opRaw.toLowerCase();
-const a = Number(aRaw);
-const b = Number(bRaw);
-
-if (Number.isNaN(a) || Number.isNaN(b)) usage('both arguments must be valid numbers');
-
-function isMultiply(o) {
-  return ['multiply', 'x', '*', 'times'].includes(o);
+function normalizeOp(o) {
+  return String(o || '').toLowerCase();
 }
-function isAdd(o) {
-  return ['add', '+'].includes(o);
-}
-function isSubtract(o) {
-  return ['subtract', '-'].includes(o);
-}
-function isDivide(o) {
-  return ['divide', '/'].includes(o);
+function matches(op, list) {
+  return list.includes(op);
 }
 
-let result;
-try {
-  if (isAdd(op)) {
-    result = a + b;
-  } else if (isSubtract(op)) {
-    result = a - b;
-  } else if (isMultiply(op)) {
-    result = a * b;
-  } else if (isDivide(op)) {
-    if (b === 0) {
+if (require.main === module) {
+  const [, , opRaw, aRaw, bRaw] = process.argv;
+  if (!opRaw || !aRaw || !bRaw) usage('operation and two numeric arguments are required');
+
+  const op = normalizeOp(opRaw);
+  const a = Number(aRaw);
+  const b = Number(bRaw);
+  if (Number.isNaN(a) || Number.isNaN(b)) usage('both arguments must be valid numbers');
+
+  try {
+    let result;
+    if (matches(op, ['add', '+'])) result = add(a, b);
+    else if (matches(op, ['subtract', '-'])) result = subtract(a, b);
+    else if (matches(op, ['multiply', 'x', '*', 'times'])) result = multiply(a, b);
+    else if (matches(op, ['divide', '/'])) result = divide(a, b);
+    else usage(`unknown operation '${opRaw}'`);
+
+    if (Number.isFinite(result)) {
+      const out = Number.isInteger(result) ? String(result) : String(Number(result.toPrecision(12))).replace(/(?:\.\d*?)0+$/, (m) => m.replace(/0+$/, ''));
+      console.log(out);
+      process.exit(0);
+    } else {
+      console.error('Error: result is not a finite number');
+      process.exit(4);
+    }
+  } catch (err) {
+    if (err && /division by zero/i.test(String(err.message))) {
       console.error('Error: division by zero');
       process.exit(2);
     }
-    result = a / b;
-  } else {
-    usage(`unknown operation '${opRaw}'`);
+    console.error('Unexpected error:', err.message || err);
+    process.exit(3);
   }
-} catch (err) {
-  console.error('Unexpected error:', err.message || err);
-  process.exit(3);
 }
 
-// Print result with reasonable precision for floating point results
-if (Number.isFinite(result)) {
-  // Trim trailing zeros for nicer output
-  const asString = Number.isInteger(result) ? String(result) : String(Number(result.toPrecision(12))).replace(/(?:\.\d*?)0+$/, (m) => m.replace(/0+$/, ''));
-  console.log(asString);
-  process.exit(0);
-} else {
-  console.error('Error: result is not a finite number');
-  process.exit(4);
-}
+module.exports = { add, subtract, multiply, divide };
